@@ -1,0 +1,13 @@
+language: node_js
+sudo: required
+node_js:
+  - '10.11.0'
+before-script:
+  - npm install ganache-cli truffle
+  - npm install
+script:
+  - ganache-cli -p 7545 > /dev/null &
+  - sleep 5
+  - truffle compile
+  - truffle migrate --network development
+  - truffle test

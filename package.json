@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "@appchain/base": "^0.20.1",
+    "openzeppelin-solidity": "^2.0.0",
+    "solc": "0.4.25"
+  }
+}
