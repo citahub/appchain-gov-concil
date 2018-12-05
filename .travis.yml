@@ -3,7 +3,7 @@ sudo: required
 node_js:
   - '10.11.0'
 before-script:
-  - npm install ganache-cli truffle
+  - npm install -g ganache-cli truffle
   - npm install
 script:
   - ganache-cli -p 7545 > /dev/null &
