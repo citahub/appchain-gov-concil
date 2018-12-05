@@ -43,7 +43,6 @@ contract('Proposals', accounts => {
     const result = await proposalsCtr.newVetoProposal(proposal.targetId, {
       from: proposer
     })
-    printLogs(result)
     count = await proposalsCtr.vetoProposalsCount()
     const newVetoProposal = await proposalsCtr.vetoProposals(0)
     expect(+count).to.be.equal(1)
