@@ -31,4 +31,11 @@ contract Proposals {
         _id = vetoProposals.push(p) - 1;
         emit NewVetoProposal(msg.sender, _targetId);
     }
+
+    function normalProposalsCount () public view returns (uint count) {
+        count = normalProposals.length;
+    }
+    function vetoProposalsCount () public view returns (uint count) {
+        count = vetoProposals.length;
+    }
 }

@@ -1,10 +1,7 @@
 const ConcilMembers = artifacts.require('ConcilMembers')
-
-const printLogs = result => {
-  result.logs.map(log => {
-    console.log(JSON.stringify(log, null, 2))
-  })
-}
+const {
+  printLog
+} = require('./utils')
 
 const MemberType = {
   Candidate: 0,
