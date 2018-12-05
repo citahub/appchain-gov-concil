@@ -2,7 +2,7 @@ language: node_js
 sudo: required
 node_js:
   - '10.11.0'
-before-script:
+install:
   - npm install -g ganache-cli truffle
   - npm install
 script:
