@@ -40,17 +40,19 @@ contract Concil is Ownable {
     }
     
     struct ProposalInfo { 
-        uint id;
-        ProposalType pType; 
-        uint submitTime;
-        uint lockedTime;
-        address lockedBy;
-        mapping(address => VoteType) votes;
+        uint id; // proposal id in proposal contract
+        ProposalType pType;  // proposal type, normal or veto
+        uint submitTime; // when submitted
+        uint lockedTime; // when locked
+        address lockedBy; // who locked
+        mapping(address => VoteType) votes; // votes
     }
 
     ProposalInfo[] public proposalInfos;
     
     mapping(address => uint) votesForCandidates;
+    event NewProposal(uint indexed id, address indexed proposer, ProposalType pType);
+    event NewVote(uint indexed id, VoteType indexed vType, address voter);
     
     constructor(
         address _proposalsAddr,
@@ -64,24 +66,29 @@ contract Concil is Ownable {
         acceptedProposalsCtr = AcceptedProposals(_acceptedProposalsAddr);
     }
     
-    // propose normal proposal to concil
+    /// @notice propose normal one
+    /// @param _ctrAddr target contract address
+    /// @param _args target function and parameters
+    /// @param _invalidUntilBlock proposal is invalid until the block number reaches
     function newNormalProposal(
         address _ctrAddr,
         bytes _args,
         uint _invalidUntilBlock)
     external returns (uint _id) {
-        uint IdInProposals = proposalCtr.newNormalProposal(_ctrAddr, _args, _invalidUntilBlock);
+        uint idInProposals = proposalCtr.newNormalProposal(_ctrAddr, _args, _invalidUntilBlock);
         ProposalInfo memory pInfo = ProposalInfo({
-            id: IdInProposals,
+            id: idInProposals,
             pType: ProposalType.Normal,
             submitTime: block.timestamp,
             lockedTime: 0,
             lockedBy: address(0)
         });
         _id = proposalInfos.push(pInfo) - 1;
+        emit NewProposal(_id, msg.sender, ProposalType.Normal);
     }
 
-    // propose veto proposal to concil
+    /// @notice propose a veto one
+    // / @param _targetId, the proposal id to veto
     function newVetoProposal(uint _targetId) external returns (uint _id) {
         uint idInProposals = proposalCtr.newVetoProposal(_targetId);
 
@@ -92,29 +99,39 @@ contract Concil is Ownable {
             lockedTime: 0,
             lockedBy: address(0)
         });
-
+        
         _id = proposalInfos.push(pInfo) - 1;
+        emit NewProposal(_id, msg.sender, ProposalType.Veto);
     }
 
-
     // vote for proposal in concil
-    function voteForProposal(uint _id, VoteType vType) external returns (bool success) {
+    /// @notice vote for proposal
+    /// @param _id the id of proposal
+    /// @param _vType the vote type, Pros, Cons, or Abs
+    function voteForProposal(uint _id, VoteType _vType) external returns (bool success) {
+
         ProposalInfo storage pInfo = proposalInfos[_id];
+
+        // if lockedTime > 0 and lockedTime + lockTime < now, the proposal is still locked
         require(pInfo.lockedTime == 0 || pInfo.lockedTime + lockTime < block.timestamp, "Proposal is locked");
-        require(!(vType == VoteType.Cons && pInfo.lockedBy == msg.sender), "You cannot veto again");
-        pInfo.votes[msg.sender] = vType;
-        if (vType == VoteType.Cons) {
+        // if vote is type of veto and msg.sender is the last lock man, refuse
+        require(!(_vType == VoteType.Cons && pInfo.lockedBy == msg.sender), "You cannot veto again");
+
+        pInfo.votes[msg.sender] = _vType;
+        if (_vType == VoteType.Cons) {
             pInfo.lockedTime = block.timestamp;
             pInfo.lockedBy = msg.sender;
         }
+        emit NewVote(_id, _vType, msg.sender);
         return true;
     }
 
     // check proposal in concil, if passed, submit to referendum
+    /// @notice check proposal
     function checkProposal(uint _id) external returns (bool accepted) {
         ProposalInfo storage pInfo = proposalInfos[_id];
         uint senatorCount = concilMembersCtr.getSenatorCount();
-        uint pros = getProsOfPropsal(_id).mul(100).div(senatorCount);
+        (uint pros, uint cons, uint abs) = getVotesOfProposalById(_id);
         if (pros == senatorCount) {
             // accepted by 100%;
             if (pInfo.pType == ProposalType.Veto) {
@@ -131,14 +148,24 @@ contract Concil is Ownable {
         }
     }
     
-    // get pros of proposal in concil
-    function getProsOfPropsal(uint _id) public view returns (uint _pros) {
+    /// @notice get votes of proposal by id
+    /// @param _id id of proposal
+    function getVotesOfProposalById(uint _id) public view returns (uint pros, uint cons, uint abs) {
         ProposalInfo storage pInfo = proposalInfos[_id];
-        for (uint i = 0; i < concilMembersCtr.getMemberCount(); i++) {
-            (address addr, ,ConcilMembers.MemberType mType, , ) = concilMembersCtr.getMember(i);
-            if (mType == ConcilMembers.MemberType.Senator && pInfo.votes[addr] == VoteType.Pros) {
-                _pros.add(1);
+        for(uint i = 0; i < concilMembersCtr.getMemberCount(); i++) {
+            (address addr, , ConcilMembers.MemberType mType, , ) = concilMembersCtr.members(i);
+            if (mType != ConcilMembers.MemberType.Senator) continue;
+            if (pInfo.votes[addr] == VoteType.Pros) {
+                pros = pros.add(1);
+            } else if (pInfo.votes[addr] == VoteType.Cons) {
+                cons = cons.add(1);
+            } else if (pInfo.votes[addr] == VoteType.Abs) {
+                abs = abs.add(1);
             }
         }
+    }
+
+    function getProposalCount() public view returns (uint count) {
+        count = proposalInfos.length;
     }
 }

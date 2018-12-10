@@ -13,7 +13,7 @@ const VoteType = {
   Abs: 2,
 }
 
-contract('Referendum', accounts => {
+contract.skip('Referendum', accounts => {
   let referendum
   beforeEach(async () => {
     referendum = await Referendum.deployed()

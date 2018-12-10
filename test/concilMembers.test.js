@@ -10,7 +10,7 @@ const MemberType = {
 
 const RevertErr = 'Error: VM Exception while processing transaction: revert'
 
-contract('ConcilMember', accounts => {
+contract.skip('ConcilMember', accounts => {
   let concilMembers
   beforeEach(async () => {
     concilMembers = await ConcilMembers.deployed()
