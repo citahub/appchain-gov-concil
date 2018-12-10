@@ -35,7 +35,6 @@ contract('AcceptedProposals', async (accounts) => {
     let status = await ap.getStatusById(proposalId)
     expect(+status).to.be.equal(Status.Accepted)
     const result = await ap.veto(proposalId)
-    printLogs(result)
     status = await ap.getStatusById(proposalId)
     expect(+status).to.be.equal(Status.Vetoed)
   })

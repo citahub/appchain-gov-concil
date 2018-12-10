@@ -11,29 +11,53 @@ contract Concil is Ownable {
     
     using SafeMath for uint;
 
+    /// @notice lockTime, if a proposal is denied, it's locked 3 days
     uint public lockTime =  3 days;
+    /// @notice 
     uint public proposalPendingTime = 30 days;
 
     Proposals proposalCtr;
     ConcilMembers concilMembersCtr;
     Referendum referendumCtr;
     AcceptedProposals acceptedProposalsCtr;
-
-    enum VoteType { Pros, Cons, Abs }
     
-    enum ProposalType{ Normal, Veto }
+    /// @notice vote type
+    /// pros to agree the proposal
+    /// cons to disagree the proposal
+    /// abs to show no idea about the proposal
+    enum VoteType { 
+        Pros, 
+        Cons, 
+        Abs
+    }
     
-    struct Candidate { address addr; uint deposit; uint votes; }
+    /// @notice proposal type
+    /// normal proposal
+    /// veto proposal to veto a cancel an pending proposal in referendum
+    enum ProposalType{ 
+        Normal, 
+        Veto 
+    }
     
-    struct Senator { address addr; uint electedTime; }
-    
-    struct ProposalInfo { uint id; ProposalType pType; uint submitTime; uint lockedTime; address lockedBy; mapping(address => VoteType) votes; }
+    struct ProposalInfo { 
+        uint id;
+        ProposalType pType; 
+        uint submitTime;
+        uint lockedTime;
+        address lockedBy;
+        mapping(address => VoteType) votes;
+    }
 
     ProposalInfo[] public proposalInfos;
     
     mapping(address => uint) votesForCandidates;
     
-    constructor(address _proposalsAddr, address _concilMembersAddr, address _referendumAddr, address _acceptedProposalsAddr) public {
+    constructor(
+        address _proposalsAddr,
+        address _concilMembersAddr,
+        address _referendumAddr,
+        address _acceptedProposalsAddr
+    ) public {
         proposalCtr = Proposals(_proposalsAddr);
         concilMembersCtr = ConcilMembers(_concilMembersAddr);
         referendumCtr = Referendum(_referendumAddr);
@@ -41,7 +65,11 @@ contract Concil is Ownable {
     }
     
     // propose normal proposal to concil
-    function newNormalProposal(address _ctrAddr, bytes _args, uint _invalidUntilBlock) external returns (uint _id) {
+    function newNormalProposal(
+        address _ctrAddr,
+        bytes _args,
+        uint _invalidUntilBlock)
+    external returns (uint _id) {
         uint IdInProposals = proposalCtr.newNormalProposal(_ctrAddr, _args, _invalidUntilBlock);
         ProposalInfo memory pInfo = ProposalInfo({
             id: IdInProposals,
@@ -94,7 +122,7 @@ contract Concil is Ownable {
                 return true;
             }
             // submit to referendum
-            referendumCtr.newProposalForVote(_id, Referendum.ProposalOrigin.Concil, 100);
+            referendumCtr.newProposal(_id, 100);
             return true;
         }
         if (pros.mul(2) > senatorCount && pInfo.submitTime + proposalPendingTime < block.timestamp) {

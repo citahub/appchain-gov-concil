@@ -10,12 +10,20 @@ contract Referendum {
     
     using SafeMath for uint;
     
+    /// @notice proposal comes from
+    /// 1. concil submitted by senator
+    /// 2. proposal queue submitted by normal account
+    /// 3. parent proposal
     enum ProposalOrigin {
         Concil,
         ProposalQueue,
         Proposal
     }
     
+    /// @notice types of vote in referendum
+    /// pros to agree the proposal
+    /// cons to disagree the proposal
+    /// abs to quit voting for the proposal
     enum VoteType {
         Pros,
         Cons,
@@ -27,82 +35,181 @@ contract Referendum {
     // AsCons => Abs Vote as Cons Vote
     // AsDis => Abs Vote distributed by propotion of Pros and Cons
 
+    /// @notice the way threating abs votes
+    /// 1. asPros to treat abs votes as pros
+    /// 2. asCons to treat abs votes as cons
+    /// 3. asDis to divide abs votes into two parts according to ratio of pros/cons
     enum AbsType {
         AsPros,
         AsCons,
         AsDis
     }
     
+    /// @notice proposal structure, including
     struct Proposal {
-        uint id;
-        ProposalOrigin origin;
-        uint prosFromConcil;
-        bool accepted;
-        mapping(address => VoteType) votes;
+        uint id; // proposal id in ProposalCtr
+        ProposalOrigin origin; // proposal origin
+        uint prosFromConcil; // percentage of pros in concil
+        bool accepted; // status of proposal, accpeted or not
+        address[] voters; // voter list
+        mapping(address => VoteType) votes; // votes from normal account
     }
     
-    address[] public voters;
-    Proposal[] public proposals;
+    // address[] public voters;
+    Proposal[] public proposals; // proposal list
     
     address public concilAddr;
     address public proposalQueueAddr;
+
+    event NewProposal(uint indexed _id, ProposalOrigin indexed _origin, uint indexed _prosFromConcil);
+    event NewVote(uint indexed _id, VoteType indexed _vType, address indexed voter);
+    event CheckOnProposal(uint indexed id, bool indexed accepted);
+
+    modifier proposalShouldNotExists(uint _id) {
+        uint index = getProposalIndex(_id);
+        require(index == proposals.length, "Proposal exists");
+        _;
+    }
+
+    modifier proposalShouldExist(uint _id) {
+        uint index = getProposalIndex(_id);
+        require(index < proposals.length, "Proposal not exists");
+        _;
+    }
     
     constructor(address _concilAddr, address _proposalQueueAddr) public {
         concilAddr = _concilAddr;
         proposalQueueAddr = _proposalQueueAddr;
     }
-    
-    function newProposalForVote(uint _id, ProposalOrigin _origin, uint _prosFromConcil) external {
-        Proposal memory p = Proposal(_id, _origin, _prosFromConcil, false);
-        proposals.push(p);
+
+    function setConcilAddr(address _concilAddr) public {
+        concilAddr = _concilAddr;
     }
 
-    function checkProposal(uint _id) public view returns (uint _pros, uint _cons) {
-        Proposal storage p = proposals[_id];
-        if(p.prosFromConcil == 100) {
-            // 100% pros from concil
-            (_pros, _cons) = getVotesOfProposal(_id, AbsType.AsPros);
-        } else if (p.prosFromConcil > 50) {
-            // > 50% from concil
-            (_pros, _cons) = getVotesOfProposal(_id, AbsType.AsDis);
-        } else if (p.origin == ProposalOrigin.ProposalQueue) {
-            (_pros, _cons) = getVotesOfProposal(_id, AbsType.AsCons);
-        }
-        //TODO: by parent proposal
-        if (_pros.mul(2) > _cons) {
-            // accepted
-        }
+    function setProposalQueueAddr(address _proposalQueueAddr) public {
+        proposalQueueAddr = _proposalQueueAddr;
     }
+
     
-    function _voteFor(uint _id, VoteType vType) internal returns (bool _success) {
-        Proposal storage p = proposals[_id];
-        _addVoter(msg.sender);
-        p.votes[msg.sender] = vType;
-        return true;
+    /// @notice add new proposal
+    /// @param _id id of proposal in Proposals
+    /// @param _prosFromConcil props from concil, [0, 100]
+    function newProposal(uint _id, uint _prosFromConcil) external proposalShouldNotExists(_id) {
+
+        ProposalOrigin _origin = ProposalOrigin.Proposal;
+        if (msg.sender == concilAddr) {
+            _origin = ProposalOrigin.Concil;
+        } else if (msg.sender == proposalQueueAddr) {
+            _origin = ProposalOrigin.ProposalQueue;
+        }
+
+        Proposal memory p = Proposal(_id, _origin, _prosFromConcil, false, new address[](0));
+        proposals.push(p);
+        emit NewProposal(_id, _origin, _prosFromConcil);
     }
-    
-    function _addVoter(address _voter) internal {
-        for (uint i = 0; i < voters.length; i++){
-            if (_voter == voters[i]) {
-                return;
+
+    /// @notice vote for proposal
+    /// @param _id id for the proposal to vote
+    /// @param _vType vote type, pros, cons or abs
+    function voteForProposal(uint _id, VoteType _vType) external proposalShouldExist(_id) returns (bool success) {
+        uint idx = getProposalIndex(_id);
+        Proposal storage p = proposals[idx];
+
+        for (uint vIdx = 0; vIdx < p.voters.length; vIdx++) {
+            if (p.voters[vIdx] == msg.sender) {
+                break;
             }
         }
-        voters.push(_voter);
+
+        if (vIdx == p.voters.length) {
+            p.voters.push(msg.sender);
+        }
+
+        p.votes[msg.sender] = _vType;
+        emit NewVote(_id, _vType, msg.sender);
+        return true;
     }
-    
-    function getVotesOfProposal(uint _id, AbsType aType) public view returns (uint _pros, uint _cons) {
-        Proposal storage p = proposals[_id];
-        for (uint i = 0; i < voters.length; i++) {
-            if (p.votes[voters[i]] == VoteType.Pros) {
-                _pros.add(voters[i].balance);
-            } else if (p.votes[voters[i]] == VoteType.Cons) {
-                _cons.add(voters[i].balance);
-            } else if (p.votes[voters[i]] == VoteType.Abs) {
-                if (aType == AbsType.AsPros) {
-                    _pros.add(voters[i].balance);
-                } else if (aType == AbsType.AsCons) {
-                    _cons.add(voters[i].balance);
-                }
+
+    /// @notice get votes of proposal by proposal id
+    /// @param _id proposal id
+    /// @return (uint pros, uint cons, uint abs)
+    function getVotesOfProposalById(uint _id) 
+    public 
+    proposalShouldExist(_id) 
+    view 
+    returns (uint pros, uint cons, uint abs) 
+    {
+        uint idx = getProposalIndex(_id);
+        Proposal storage p = proposals[idx];
+        for (uint i = 0; i < p.voters.length; i++) {
+            VoteType v = p.votes[p.voters[i]];
+            if (v == VoteType.Pros) {
+                pros = pros.add(1);
+            } else if (v == VoteType.Cons) {
+                cons = cons.add(1);
+            } else {
+                abs = abs.add(1);
+            }
+        }
+    }
+
+    /// @notice check proposal votes
+    /// if proposal is from concil with 100 prosFromConcil
+    ///    1. all abs are regarded as pros
+    ///    2. > 50% pros makes the proposal passed
+    ///
+    /// if proposal is from concil with >50 prosFromConcil
+    ///    1. divide abs into two parts according to pros/cons
+    ///    2. > 50% pros makes the proposal passed
+    /// 
+    /// if proposal is from proposal queue
+    ///    1. all abs are regarded as cons
+    ///    2. > 50% pros makes the proposal passed
+    ///
+    /// if proposal is from parent proposal
+    ///    1. inherits its parent proposal's standard
+    function checkProposalById(uint _id) public returns (bool accepted) {
+        // Proposal storage p = proposals[_id];
+        uint idx = getProposalIndex(_id);
+        Proposal storage p = proposals[idx];
+        (uint pros, uint cons, uint abs) = getVotesOfProposalById(_id);
+        uint base = 10000;
+        pros = pros.mul(base);
+        cons = cons.mul(base);
+        abs = abs.mul(base);
+
+        if(p.prosFromConcil == 100) {
+            // 100% pros from concil
+            pros = pros.add(abs);
+        } else if (p.prosFromConcil > 50) {
+            // > 50% from concil
+            uint total = pros.add(cons);
+            uint absToPros = abs.mul(pros).div(total);
+            uint absToCons = abs.mul(cons).div(total);
+            pros = pros.add(absToPros);
+            cons = cons.add(absToCons);
+        } else if (p.origin == ProposalOrigin.ProposalQueue) {
+            cons = cons.add(abs);
+        }
+        //TODO: by parent proposal
+        if (pros.mul(2) > p.voters.length.mul(base)) {
+            // proposal passed
+            p.accepted = true;
+            emit CheckOnProposal(_id, true);
+            return true;
+        }
+        emit CheckOnProposal(_id, false);
+        return false;
+    }
+
+    function proposalCount() public view returns (uint count) {
+        count = proposals.length;
+    }
+
+    function getProposalIndex(uint _id) public view returns (uint _index) {
+        for (_index = 0; _index < proposals.length; _index++) {
+            if (proposals[_index].id == _id) {
+                return _index;
             }
         }
     }
