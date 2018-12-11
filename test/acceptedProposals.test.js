@@ -1,16 +1,14 @@
 const AcceptedProposals = artifacts.require('AcceptedProposals')
-const {
-  printLogs
-} = require('./utils')
+const { printLogs } = require('./utils')
 
 const Status = {
   Vetoed: 0,
-  Accepted: 1
+  Accepted: 1,
 }
 
-contract.skip('AcceptedProposals', async (accounts) => {
+contract('AcceptedProposals', async accounts => {
   let ap // acceptedProposals
-  const proposalId = 1;
+  const proposalId = 1
   beforeEach(async () => {
     ap = await AcceptedProposals.deployed()
   })
@@ -18,7 +16,7 @@ contract.skip('AcceptedProposals', async (accounts) => {
   it('new accepted proposal', async () => {
     let count = await ap.proposalCount()
     expect(+count).to.be.equal(0)
-    const result = await ap.newProposal(proposalId);
+    const result = await ap.newProposal(proposalId)
     count = await ap.proposalCount()
     const proposal = await ap.proposalStatuses(0)
     expect(+count).to.be.equal(1)

@@ -10,7 +10,7 @@ const MemberType = {
 
 const RevertErr = 'Error: VM Exception while processing transaction: revert'
 
-contract.skip('ConcilMember', accounts => {
+contract('ConcilMember', accounts => {
   let concilMembers
   beforeEach(async () => {
     concilMembers = await ConcilMembers.deployed()
@@ -58,7 +58,7 @@ contract.skip('ConcilMember', accounts => {
     const count = await concilMembers.getMemberCount()
     const memberId = await concilMembers.getMemberId(accounts[0])
     expect(+memberId).to.be.equal(1)
-    const member = await concilMembers.getMember(+memberId) // expect to be [addr, deposit, mType, electedTime, votes]
+    const member = await concilMembers.members(+memberId) // expect to be [addr, deposit, mType, electedTime, votes]
     expect(+count).to.be.equal(1)
     expect(member[0]).to.be.equal(accounts[0]) // addr
     expect(+member[1]).to.be.equal(deposit) // deposit
@@ -70,7 +70,7 @@ contract.skip('ConcilMember', accounts => {
   it('should quit successfully', async () => {
     const result = await concilMembers.applyToQuit()
     const count = await concilMembers.getMemberCount()
-    const member = await concilMembers.getMember(1)
+    const member = await concilMembers.members(1)
     expect(+count).to.be.equal(1)
     expect(member[0]).to.be.equal(accounts[0])
     expect(+member[1]).to.be.equal(0)
@@ -84,7 +84,7 @@ contract.skip('ConcilMember', accounts => {
     })
     const memberId = await concilMembers.getMemberId(accounts[0])
     expect(+memberId).to.be.equal(1)
-    let member = await concilMembers.getMember(+memberId)
+    let member = await concilMembers.members(+memberId)
     expect(member[0]).to.be.equal(accounts[0])
     expect(+member[1]).to.be.equal(deposit)
     // apply again
@@ -92,7 +92,7 @@ contract.skip('ConcilMember', accounts => {
       from: accounts[0],
       value: deposit,
     })
-    member = await concilMembers.getMember(+memberId)
+    member = await concilMembers.members(+memberId)
     expect(+member[1]).to.be.equal(deposit * 2)
   })
 
@@ -104,7 +104,7 @@ contract.skip('ConcilMember', accounts => {
     })
     const count = await concilMembers.getMemberCount()
     const memberId = await concilMembers.getMemberId(accounts[1])
-    const member = await concilMembers.getMember(+memberId)
+    const member = await concilMembers.members(+memberId)
     expect(+count).to.be.equal(2)
     expect(+memberId).to.be.equal(2)
     expect(member[0]).to.be.equal(accounts[1])
@@ -118,16 +118,16 @@ contract.skip('ConcilMember', accounts => {
     const result = await concilMembers.voteForCandidate(1, {
       from: accounts[2],
     })
-    const member1 = await concilMembers.getMember(1)
+    const member1 = await concilMembers.members(1)
     expect(+member1[4]).to.be.equal(1)
     const voteOfAccount2 = await concilMembers.votesForMember(accounts[2])
     expect(+voteOfAccount2).to.be.equal(1)
   })
 
   it('accounts[2] votes for members[2]', async () => {
-    let member1 = await concilMembers.getMember(1)
+    let member1 = await concilMembers.members(1)
     expect(+member1[4]).to.be.equal(1)
-    let member2 = await concilMembers.getMember(2)
+    let member2 = await concilMembers.members(2)
     expect(+member2[4]).to.be.equal(0)
     let voteOfAccount2 = await concilMembers.votesForMember(accounts[2])
     expect(+voteOfAccount2).to.be.equal(1)
