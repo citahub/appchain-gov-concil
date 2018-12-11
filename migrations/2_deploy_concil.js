@@ -1,6 +1,7 @@
 const Concil = artifacts.require('Concil')
 const ConcilMembers = artifacts.require('ConcilMembers')
 const Proposals = artifacts.require('Proposals')
+const ProposalQueue = artifacts.require('ProposalQueue')
 const AcceptedProposals = artifacts.require('AcceptedProposals')
 const Referendum = artifacts.require('Referendum')
 
@@ -33,6 +34,14 @@ module.exports = deployer => {
         contracts.concilMembers.address,
         contracts.referendum.address,
         contracts.acceptedProposals.address,
+      )
+    })
+    .then(ins => {
+      contracts.concil = ins
+      return deployer.deploy(
+        ProposalQueue,
+        contracts.proposals.address,
+        contracts.referendum.address,
       )
     })
 }

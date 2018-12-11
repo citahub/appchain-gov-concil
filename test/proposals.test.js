@@ -4,7 +4,7 @@ const {
   printLogs
 } = require('./utils')
 
-contract('Proposals', accounts => {
+contract.skip('Proposals', accounts => {
   let proposalsCtr
 
   beforeEach(async () => {

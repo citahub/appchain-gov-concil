@@ -8,7 +8,7 @@ const Status = {
   Accepted: 1
 }
 
-contract('AcceptedProposals', async (accounts) => {
+contract.skip('AcceptedProposals', async (accounts) => {
   let ap // acceptedProposals
   const proposalId = 1;
   beforeEach(async () => {
