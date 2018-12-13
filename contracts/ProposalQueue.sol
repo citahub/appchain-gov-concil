@@ -17,10 +17,13 @@ contract ProposalQueue {
     
     uint minDeposit = 1000;
     
-    Proposals proposalCtr;
-    Referendum referendumCtr;
+    Proposals public proposalCtr;
+    Referendum public referendumCtr;
     
     ProposalInfo[] public proposalInfos;
+
+    event NewProposal(uint indexed id, address indexed proposer, uint indexed deposit);
+    event ProposalToReferendum(uint indexed id);
     
     constructor(address _proposalsAddr, address _referendumAddr) public {
         proposalCtr = Proposals(_proposalsAddr);
@@ -45,6 +48,7 @@ contract ProposalQueue {
         _id = proposalInfos.push(pInfo) - 1;
         proposalInfos[_id].depositors.push(msg.sender);
         proposalInfos[_id].deposits.push(msg.value);
+        emit NewProposal(_id, msg.sender, msg.value);
     }
     
     function addDeposit(uint _id) public payable returns (bool success) {
@@ -62,13 +66,13 @@ contract ProposalQueue {
     }
     
     function checkProposals() external returns (uint _idOfMostDeposit) {
-        _idOfMostDeposit = proposalInfos.length;
-        for (uint _id = 0; _id < proposalInfos.length; _id++) {
-            if (!proposalInfos[_id].submitted && getTotalDepositOfProposal(_id) > getTotalDepositOfProposal(_idOfMostDeposit)) {
+        _idOfMostDeposit = 0;
+        for (uint _id = 1; _id < proposalInfos.length; _id++) {
+            if (!proposalInfos[_id].submitted && getTotalDepositOfProposalById(_id) > getTotalDepositOfProposalById(_idOfMostDeposit)) {
                 _idOfMostDeposit = _id;
             }
         }
-        require(_idOfMostDeposit != proposalInfos.length, "No proposal is ready");
+        require(_idOfMostDeposit != proposalInfos.length && !proposalInfos[_idOfMostDeposit].submitted, "No proposals are ready");
         submitProposal(_idOfMostDeposit);
     }
     
@@ -82,8 +86,9 @@ contract ProposalQueue {
             pInfo.depositors[i].transfer(value);
         }
 
-        uint pros = getTotalDepositOfProposal(_id);
+        uint pros = getTotalDepositOfProposalById(_id);
         // submit to referendum
+        emit ProposalToReferendum(_id);
         referendumCtr.newProposal(_id, pros);
     }
     
@@ -96,10 +101,23 @@ contract ProposalQueue {
         }
     }
     
-    function getTotalDepositOfProposal(uint _id) public view returns (uint _total) {
+    function getTotalDepositOfProposalById(uint _id) public view returns (uint _total) {
         uint[] storage deposits = proposalInfos[_id].deposits;
         for (uint i = 0; i < deposits.length; i++) {
             _total = _total.add(deposits[i]);
+        }
+    }
+
+    function getProposalCount() public view returns (uint count) {
+        return proposalInfos.length;
+    }
+
+    function getDepositOfProposal(uint _id, address _depositor) public view returns (uint deposit) {
+        ProposalInfo storage pInfo = proposalInfos[_id];
+        for (uint i = 0; i < pInfo.depositors.length; i++) {
+            if (pInfo.depositors[i] == _depositor) {
+                return pInfo.deposits[i];
+            }
         }
     }
 

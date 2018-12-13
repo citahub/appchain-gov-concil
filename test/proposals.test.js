@@ -1,8 +1,6 @@
 const Proposals = artifacts.require('Proposals')
 
-const {
-  printLogs
-} = require('./utils')
+const { printLogs } = require('./utils')
 
 contract('Proposals', accounts => {
   let proposalsCtr
@@ -35,13 +33,13 @@ contract('Proposals', accounts => {
   it('accounts[1] should propose a veto proposal', async () => {
     const proposer = accounts[1]
     const proposal = {
-      targetId: 0
+      targetId: 0,
     }
 
     let count = await proposalsCtr.vetoProposalsCount()
     expect(+count).to.be.equal(0)
     const result = await proposalsCtr.newVetoProposal(proposal.targetId, {
-      from: proposer
+      from: proposer,
     })
     count = await proposalsCtr.vetoProposalsCount()
     const newVetoProposal = await proposalsCtr.vetoProposals(0)

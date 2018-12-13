@@ -171,11 +171,4 @@ contract ConcilMembers {
             }
         }
     }
-
-    // get member by id
-    function getMember(uint _i) public view returns (address addr, uint deposit, MemberType mType, uint electedTime, uint votes) {
-        Member storage m = members[_i];
-        return (m.addr, m.deposit, m.mType, m.electedTime, m.votes);
-    }
-
 }
