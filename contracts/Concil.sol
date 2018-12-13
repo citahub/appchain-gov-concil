@@ -116,7 +116,7 @@ contract Concil is Ownable {
         ProposalInfo storage pInfo = proposalInfos[_id];
 
         // if lockedTime > 0 and lockedTime + lockTime < now, the proposal is still locked
-        require(pInfo.lockedTime == 0 || pInfo.lockedTime + lockTime < block.timestamp, "Proposal is locked");
+        // require(pInfo.lockedTime == 0 || pInfo.lockedTime + lockTime < block.timestamp, "Proposal is locked");
         // if vote is type of veto and msg.sender is the last lock man, refuse
         require(!(_vType == VoteType.Cons && pInfo.lockedBy == msg.sender), "You cannot veto again");
 

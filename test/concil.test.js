@@ -9,7 +9,7 @@ const ZeroAddr = '0x0000000000000000000000000000000000000000'
 
 const Events = {
   ProposalNotAccepted: 'ProposalNotAccepted',
-  ProposalToReferendum: 'ProposalToReferendum'
+  ProposalToReferendum: 'ProposalToReferendum',
 }
 
 const VoteType = {
@@ -56,7 +56,6 @@ contract('Concil', accounts => {
   })
 
   it('propose a new normal proposal', async () => {
-
     const proposal = {
       ctrAddr: accounts[0],
       args: '0xffeeff',
@@ -99,11 +98,10 @@ contract('Concil', accounts => {
     expect(+pInProposals[1]).to.be.equal(vetoProposal.targetId)
   })
 
-
   it('vote for proposal with id = 0, vType = Pros', async () => {
     const proposal = {
       id: 0,
-      vType: VoteType.Pros
+      vType: VoteType.Pros,
     }
     let votes = await concil.getVotesOfProposalById(proposal.id)
     let pros = votes[0]
@@ -122,7 +120,7 @@ contract('Concil', accounts => {
   it('vote for proposal with id = 0, vType = Cons', async () => {
     const proposal = {
       id: 0,
-      vType: VoteType.Cons
+      vType: VoteType.Cons,
     }
 
     let votes = await concil.getVotesOfProposalById(proposal.id)
@@ -139,7 +137,6 @@ contract('Concil', accounts => {
     expect(+p[3]).to.not.be.equal(0) // lockedtime
   })
 
-
   it('check proposal with id = 0, it should have votes of [0, 1, 0], not accepted', async () => {
     const proposal = {
       id: 0,
@@ -148,17 +145,18 @@ contract('Concil', accounts => {
     const senatorCount = await concilMembers.getSenatorCount()
     expect(+senatorCount).to.be.equal(1)
     const votes = await concil.getVotesOfProposalById(proposal.id)
-    let result = await concil.checkProposal(proposal.id);
+    let result = await concil.checkProposal(proposal.id)
     expect(result.logs[0].event).to.be.equal(Events.ProposalNotAccepted)
     expect({
       id: +result.logs[0].args.id,
-      pros: +result.logs[0].args.prosFromConcil
+      pros: +result.logs[0].args.prosFromConcil,
     }).to.be.deep.equal(proposal)
   })
 
-  it.skip('check proposal with id = 0, it will have votes of [1, 0, 0], not accepted', async () => {
+  it('check proposal with id = 0, it will have votes of [1, 0, 0], not accepted', async () => {
     const proposal = {
       id: 0,
+      vType: VoteType.Pros,
       pros: 100,
     }
     const senatorCount = await concilMembers.getSenatorCount()
@@ -166,11 +164,14 @@ contract('Concil', accounts => {
     await concil.voteForProposal(proposal.id, proposal.vType)
     const votes = await concil.getVotesOfProposalById(proposal.id)
     console.log(votes)
-    let result = await concil.checkProposal(proposal.id);
+    let result = await concil.checkProposal(proposal.id)
     expect(result.logs[0].event).to.be.equal(Events.ProposalToReferendum)
     expect({
       id: +result.logs[0].args.id,
-      pros: +result.logs[0].args.prosFromConcil
-    }).to.be.deep.equal(proposal)
+      pros: +result.logs[0].args.prosFromConcil,
+    }).to.be.deep.equal({
+      id: proposal.id,
+      pros: proposal.pros
+    })
   })
 })
