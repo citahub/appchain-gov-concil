@@ -72,7 +72,7 @@ contract ProposalQueue {
         submitProposal(_idOfMostDeposit);
     }
     
-    function submitProposal(uint _id) internal returns (uint _idInProposals) {
+    function submitProposal(uint _id) internal {
         ProposalInfo storage pInfo = proposalInfos[_id];
         require(!pInfo.submitted, "Proposal has been submitted");
         pInfo.submitted = true;
@@ -84,7 +84,7 @@ contract ProposalQueue {
 
         uint pros = getTotalDepositOfProposal(_id);
         // submit to referendum
-        referendumCtr.newProposalForVote(_id, Referendum.ProposalOrigin.Concil, pros);
+        referendumCtr.newProposal(_id, pros);
     }
     
     function getDepositorId(uint _proposalId, address _depositor) public view returns (uint _id) {
