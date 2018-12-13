@@ -1,4 +1,5 @@
 pragma solidity ^0.4.24;
+import "./AcceptedProposals.sol";
 
 import "../node_modules/openzeppelin-solidity/contracts/math/SafeMath.sol";
 
@@ -60,6 +61,8 @@ contract Referendum {
     
     address public concilAddr;
     address public proposalQueueAddr;
+    // address public acceptedProposalsAddr;
+    AcceptedProposals acceptedProposalsCtr;
 
     event NewProposal(uint indexed _id, ProposalOrigin indexed _origin, uint indexed _prosFromConcil);
     event NewVote(uint indexed _id, VoteType indexed _vType, address indexed voter);
@@ -77,9 +80,10 @@ contract Referendum {
         _;
     }
     
-    constructor(address _concilAddr, address _proposalQueueAddr) public {
+    constructor(address _concilAddr, address _proposalQueueAddr, address _acceptedProposalsAddr) public {
         concilAddr = _concilAddr;
         proposalQueueAddr = _proposalQueueAddr;
+        acceptedProposalsCtr = AcceptedProposals(_acceptedProposalsAddr);
     }
 
     function setConcilAddr(address _concilAddr) public {
@@ -195,6 +199,7 @@ contract Referendum {
         if (pros.mul(2) > p.voters.length.mul(base)) {
             // proposal passed
             p.accepted = true;
+            acceptedProposalsCtr.newProposal(_id);
             emit CheckOnProposal(_id, true);
             return true;
         }
