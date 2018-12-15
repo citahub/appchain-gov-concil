@@ -148,11 +148,11 @@ contract Referendum {
         for (uint i = 0; i < p.voters.length; i++) {
             VoteType v = p.votes[p.voters[i]];
             if (v == VoteType.Pros) {
-                pros = pros.add(1);
+                pros = pros.add(p.voters[i].balance);
             } else if (v == VoteType.Cons) {
-                cons = cons.add(1);
+                cons = cons.add(p.voters[i].balance);
             } else {
-                abs = abs.add(1);
+                abs = abs.add(p.voters[i].balance);
             }
         }
     }

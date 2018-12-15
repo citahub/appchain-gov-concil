@@ -103,7 +103,8 @@ contract('Referendum', accounts => {
       from: vote.voter,
     })
     votes = await referendum.getVotesOfProposalById(vote.id)
-    expect(votes.toString()).to.be.equal('1,0,0')
+    const balance = await web3.eth.getBalance(accounts[0])
+    expect(votes.toString()).to.be.equal(`${balance},0,0`)
   })
 
   it('vote for proposal with id = 2, vType = Cons from accounts[1]', async () => {
@@ -113,12 +114,15 @@ contract('Referendum', accounts => {
       voter: accounts[1],
     }
     let votes = await referendum.getVotesOfProposalById(vote.id)
-    expect(votes.toString()).to.be.equal('1,0,0')
+    const balance0 = await web3.eth.getBalance(accounts[0])
+    expect(votes.toString()).to.be.equal(`${balance0},0,0`)
     const result = await referendum.voteForProposal(vote.id, vote.vType, {
       from: vote.voter,
     })
     votes = await referendum.getVotesOfProposalById(vote.id)
-    expect(votes.toString()).to.be.equal('1,1,0')
+        const balance1 = await web3.eth.getBalance(accounts[0])
+
+    expect(votes.toString()).to.be.equal(`${balance0},${balance1},0`)
   })
 
   it('vote for proposal with id = 2, vType = Abs from accounts[2]', async () => {
@@ -128,12 +132,15 @@ contract('Referendum', accounts => {
       voter: accounts[2],
     }
     let votes = await referendum.getVotesOfProposalById(vote.id)
-    expect(votes.toString()).to.be.equal('1,1,0')
+    const balance0 = await web3.eth.getBalance(accounts[0])
+    const balance1 = await web3.eth.getBalance(accounts[1])
+    expect(votes.toString()).to.be.equal(`${balance0},${balance1},0`)
     const result = await referendum.voteForProposal(vote.id, vote.vType, {
       from: vote.voter,
     })
     votes = await referendum.getVotesOfProposalById(vote.id)
-    expect(votes.toString()).to.be.equal('1,1,1')
+    const balance2 = await web3.eth.getBalance(accounts[2])
+    expect(votes.toString()).to.be.equal(`${balance0},${balance1},${balance2}`)
   })
 
   it('check proposal with id = 2, now it has votes [1, 1, 1] and from concil with 100 pros, accepted', async () => {

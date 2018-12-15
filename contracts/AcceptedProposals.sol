@@ -33,7 +33,7 @@ contract AcceptedProposals {
             ProposalStatus storage s = proposalStatuses[i];
             if (s.id == _id) {
                 require(s.status == Status.Accepted, "Proposal has been vetoed");
-                // removed for 
+                // removed for test
                 // require(s.acceptedTime + pendingTime < block.timestamp, "Proposal has been resolved");
                 s.status = Status.Vetoed;
                 emit NewVeto(_id);

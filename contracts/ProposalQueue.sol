@@ -15,8 +15,10 @@ contract ProposalQueue {
         bool submitted;
     }
     
-    uint minDeposit = 1000;
-    
+    uint public minDeposit = 1000;
+    uint public term = 30 days;
+    uint public lastSubmitTime = block.timestamp;
+
     Proposals public proposalCtr;
     Referendum public referendumCtr;
     
@@ -66,6 +68,8 @@ contract ProposalQueue {
     }
     
     function checkProposals() external returns (uint _idOfMostDeposit) {
+        // removed for test
+        // require(lastSubmitTime + term < block.timestamp, "Cannot check proposal now");
         _idOfMostDeposit = 0;
         for (uint _id = 1; _id < proposalInfos.length; _id++) {
             if (!proposalInfos[_id].submitted && getTotalDepositOfProposalById(_id) > getTotalDepositOfProposalById(_idOfMostDeposit)) {
@@ -73,6 +77,7 @@ contract ProposalQueue {
             }
         }
         require(_idOfMostDeposit != proposalInfos.length && !proposalInfos[_idOfMostDeposit].submitted, "No proposals are ready");
+        lastSubmitTime = block.timestamp;
         submitProposal(_idOfMostDeposit);
     }
     
