@@ -60,7 +60,7 @@ contract ConcilMembers {
     // apply to be a member with deposit
     // if msg.sender is already at members, add up depost
     // if msg.sender is a fresh man, push to member list
-    function applyToBeAMember() external payable returns (uint _id) {
+    function applyForMember() external payable returns (uint _id) {
         require(msg.value >= minDeposit, "Deposit not Enough");
         _id = getMemberId(msg.sender);
         if (_id == members.length) {

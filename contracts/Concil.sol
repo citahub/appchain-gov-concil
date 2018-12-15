@@ -51,7 +51,6 @@ contract Concil is Ownable {
 
     ProposalInfo[] public proposalInfos;
     
-    mapping(address => uint) votesForCandidates;
     event NewProposal(uint indexed id, address indexed proposer, ProposalType pType);
     event NewVote(uint indexed id, VoteType indexed vType, address voter);
     event ProposalToReferendum(uint indexed id, uint indexed prosFromConcil);
@@ -147,7 +146,11 @@ contract Concil is Ownable {
             referendumCtr.newProposal(_id, 100);
             return true;
         }
-        if (pros.mul(2) > senatorCount && pInfo.submitTime + proposalPendingTime < block.timestamp) {
+        if (pros.mul(2) > senatorCount 
+            && pInfo.lockedTime != 0 
+            && pInfo.lockedTime.add(lockTime) < block.timestamp 
+            && pInfo.submitTime.add(proposalPendingTime) < block.timestamp
+        ) {
             // accpted by 50% and > 30 days
             uint _pros = pros.mul(100).div(senatorCount);
             emit ProposalToReferendum(_id, _pros);

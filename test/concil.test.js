@@ -38,7 +38,7 @@ contract('Concil', accounts => {
   // add one senator
   it('accounts[0] should be a senator in concil members', async () => {
     const deposit = 1001
-    await concilMembers.applyToBeAMember({
+    await concilMembers.applyForMember({
       from: accounts[0],
       value: deposit,
     })
@@ -163,7 +163,6 @@ contract('Concil', accounts => {
     expect(+senatorCount).to.be.equal(1)
     await concil.voteForProposal(proposal.id, proposal.vType)
     const votes = await concil.getVotesOfProposalById(proposal.id)
-    console.log(votes)
     let result = await concil.checkProposal(proposal.id)
     expect(result.logs[0].event).to.be.equal(Events.ProposalToReferendum)
     expect({

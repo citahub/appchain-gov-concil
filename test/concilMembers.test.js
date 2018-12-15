@@ -40,7 +40,7 @@ contract('ConcilMember', accounts => {
   it('should failed to be a member with deposito less than 1000', () => {
     const deposit = 999
     concilMembers
-      .applyToBeAMember({
+      .applyForMember({
         from: accounts[0],
         value: deposit,
       })
@@ -51,7 +51,7 @@ contract('ConcilMember', accounts => {
 
   it('should to be a member with deposit more than 1000', async () => {
     const deposit = 1001
-    const result = await concilMembers.applyToBeAMember({
+    const result = await concilMembers.applyForMember({
       from: accounts[0],
       value: deposit,
     })
@@ -78,7 +78,7 @@ contract('ConcilMember', accounts => {
 
   it('should add deposit if already in member list', async () => {
     const deposit = 3333
-    const result = await concilMembers.applyToBeAMember({
+    const result = await concilMembers.applyForMember({
       from: accounts[0],
       value: deposit,
     })
@@ -88,7 +88,7 @@ contract('ConcilMember', accounts => {
     expect(member[0]).to.be.equal(accounts[0])
     expect(+member[1]).to.be.equal(deposit)
     // apply again
-    await concilMembers.applyToBeAMember({
+    await concilMembers.applyForMember({
       from: accounts[0],
       value: deposit,
     })
@@ -98,7 +98,7 @@ contract('ConcilMember', accounts => {
 
   it('should add one more member', async () => {
     const deposit = 1001
-    const result = await concilMembers.applyToBeAMember({
+    const result = await concilMembers.applyForMember({
       from: accounts[1],
       value: deposit,
     })
